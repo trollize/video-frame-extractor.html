@@ -21,10 +21,10 @@ Upload a video, extract all the frames, save as *.zip file or DataURL (base64) l
 
 # Why 3 Files?
 
-video-frame-extractor-zip-csv.html uses external *.js file so it won't run offline.
+video-frame-extractor-zip-csv.html (online version) uses external *.js file so it won't run offline.
 
-video-frame-extractor-zip-csv-embedded-JS.html has the JavaScript code embedded (my addition). 107KB
+video-frame-extractor-zip-csv-embedded-JS.html (offline/local version) has the JavaScript code embedded to make it portable (runs on linux/android/windows/mac) and will and do it's thing offline or without internet (my addition). 107KB
 
-video-frame-extractor-zip-csv-compressed-JS.html is embedded JS, but it's compressed to half the size (48KB).
+video-frame-extractor-zip-csv-compressed-JS.html (offline) is embedded JS, but it's the script is compressed to half the size (48KB).
 
 

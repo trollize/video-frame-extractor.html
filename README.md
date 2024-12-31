@@ -27,4 +27,5 @@ video-frame-extractor-zip-csv-embedded-JS.html (offline/local version) has the J
 
 video-frame-extractor-zip-csv-compressed-JS.html (portable offline) is embedded JS, but it's the script is compressed to half the size (48KB). The compression I made is self extracting within itself...
 
+![frame-extractor](https://github.com/user-attachments/assets/9e2bc619-5535-4693-b4a7-d06e37bd5541)
 

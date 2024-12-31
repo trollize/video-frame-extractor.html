@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Video Frame Extractor - All Frames</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        /* Previous styles remain the same */
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .video-container {
+            margin-bottom: 20px;
+        }
+        #videoElement {
+            max-width: 100%;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #downloadButton {
+            background-color: #2196F3;
+        }
+        #downloadButton:hover {
+            background-color: #1976D2;
+        }
+        #downloadCsvButton {
+            background-color: #FF9800;
+        }
+        #downloadCsvButton:hover {
+            background-color: #F57C00;
+        }
+        #frameCanvas {
+            display: none;
+        }
+        .frames-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .frame {
+            border: 1px solid #ddd;
+            padding: 5px;
+            background-color: white;
+        }
+        .frame img {
+            max-width: 200px;
+            height: auto;
+        }
+        .frame-number {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        #progress {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+            display: none;
+        }
+        #progressBar {
+            width: 0%;
+            height: 100%;
+            background-color: #4CAF50;
+            transition: width 0.3s ease;
+        }
+        #status {
+            margin: 10px 0;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Video Frame Extractor</h1>
+        
+        <div class="video-container">
+            <input type="file" id="videoInput" accept="video/*" style="display: none">
+            <button id="uploadButton">Upload Video</button>
+            <video id="videoElement" controls></video>
+            <button id="processButton" disabled>Extract All Frames</button>
+            <button id="downloadButton" disabled>Download Frames (ZIP)</button>
+            <button id="downloadCsvButton" disabled>Download Base64 (CSV)</button>
+            <div id="progress">
+                <div id="progressBar"></div>
+            </div>
+            <div id="status"></div>
+        </div>
+
+        <canvas id="frameCanvas"></canvas>
+        <div class="frames-container" id="framesContainer"></div>
+    </div>
+
+    <script>
+        // Previous variables remain the same
+        var videoInput = document.getElementById("videoInput");
+        var videoElement = document.getElementById("videoElement");
+        var uploadButton = document.getElementById("uploadButton");
+        var processButton = document.getElementById("processButton");
+        var downloadButton = document.getElementById("downloadButton");
+        var downloadCsvButton = document.getElementById("downloadCsvButton");
+        var frameCanvas = document.getElementById("frameCanvas");
+        var framesContainer = document.getElementById("framesContainer");
+        var progress = document.getElementById("progress");
+        var progressBar = document.getElementById("progressBar");
+        var status = document.getElementById("status");
+        var canvasContext = frameCanvas.getContext("2d");
+        var isProcessing = false;
+        var frameCount = 0;
+        var frameDataArray = [];
+
+        // Previous event handlers remain the same
+        uploadButton.onclick = function() {
+            videoInput.click();
+        };
+
+        videoInput.onchange = function(event) {
+            var file = event.target.files[0];
+            var videoURL = URL.createObjectURL(file);
+            videoElement.src = videoURL;
+            videoElement.onloadedmetadata = function() {
+                processButton.disabled = false;
+                downloadButton.disabled = true;
+                downloadCsvButton.disabled = true;
+                status.textContent = "Video loaded. Duration: " + videoElement.duration.toFixed(2) + " seconds";
+                frameDataArray = [];
+                framesContainer.innerHTML = "";
+                frameCount = 0;
+            };
+        };
+
+        processButton.onclick = function() {
+            if (isProcessing) {
+                return;
+            }
+            processButton.disabled = true;
+            downloadButton.disabled = true;
+            downloadCsvButton.disabled = true;
+            framesContainer.innerHTML = "";
+            frameCount = 0;
+            frameDataArray = [];
+            progress.style.display = "block";
+            isProcessing = true;
+            extractFrames();
+        };
+
+        // Add new CSV download handler
+        downloadCsvButton.onclick = function() {
+            status.textContent = "Creating CSV file...";
+            downloadCsvButton.disabled = true;
+
+            try {
+                // Create CSV content with one base64 string per line
+                var csvContent = frameDataArray.join('\n');
+                
+                // Create blob and download link
+                var blob = new Blob([csvContent], { type: 'text/csv' });
+                var downloadLink = document.createElement('a');
+                downloadLink.href = URL.createObjectURL(blob);
+                downloadLink.download = "frame_data.csv";
+                
+                status.textContent = "Starting CSV download...";
+                downloadLink.click();
+                
+                status.textContent = "CSV download complete! " + frameCount + " frames exported.";
+                downloadCsvButton.disabled = false;
+            } catch (error) {
+                status.textContent = "Error creating CSV: " + error.message;
+                downloadCsvButton.disabled = false;
+            }
+        };
+
+        // Previous ZIP download handler remains the same
+        downloadButton.onclick = async function() {
+            status.textContent = "Creating ZIP file...";
+            downloadButton.disabled = true;
+            
+            var zip = new JSZip();
+            var frames = zip.folder("frames");
+            
+            frameDataArray.forEach((frameData, index) => {
+                var imageData = frameData.split(',')[1];
+                frames.file(`frame_${(index + 1).toString().padStart(5, '0')}.png`, imageData, {base64: true});
+            });
+            
+            try {
+                status.textContent = "Generating ZIP file...";
+                var content = await zip.generateAsync({type: "blob"});
+                
+                var downloadLink = document.createElement('a');
+                downloadLink.href = URL.createObjectURL(content);
+                downloadLink.download = "video_frames.zip";
+                
+                status.textContent = "Starting download...";
+                downloadLink.click();
+                
+                status.textContent = "Download complete! " + frameCount + " frames exported.";
+                downloadButton.disabled = false;
+            } catch (error) {
+                status.textContent = "Error creating ZIP: " + error.message;
+                downloadButton.disabled = false;
+            }
+        };
+
+        function extractFrames() {
+            frameCanvas.width = videoElement.videoWidth;
+            frameCanvas.height = videoElement.videoHeight;
+            videoElement.currentTime = 0;
+            
+            function processFrame() {
+                if (isProcessing && !videoElement.ended && !videoElement.paused) {
+                    canvasContext.drawImage(videoElement, 0, 0);
+                    
+                    var frameData = frameCanvas.toDataURL('image/png');
+                    frameDataArray.push(frameData);
+                    
+                    var frameDiv = document.createElement("div");
+                    frameDiv.className = "frame";
+                    
+                    var frameImg = document.createElement("img");
+                    frameImg.src = frameData;
+                    frameDiv.appendChild(frameImg);
+                    
+                    var frameNumber = document.createElement("div");
+                    frameNumber.className = "frame-number";
+                    frameNumber.textContent = "Frame " + (++frameCount);
+                    frameDiv.appendChild(frameNumber);
+                    
+                    framesContainer.appendChild(frameDiv);
+
+                    var progress = (videoElement.currentTime / videoElement.duration) * 100;
+                    progressBar.style.width = progress + "%";
+                    status.textContent = "Extracting frame " + frameCount + 
+                                       " (Time: " + videoElement.currentTime.toFixed(2) + 
+                                       "s / " + videoElement.duration.toFixed(2) + "s)";
+
+                    requestAnimationFrame(processFrame);
+                } else if (videoElement.ended || videoElement.currentTime >= videoElement.duration) {
+                    processButton.disabled = false;
+                    downloadButton.disabled = false;
+                    downloadCsvButton.disabled = false;
+                    isProcessing = false;
+                    status.textContent = "Completed! Extracted " + frameCount + " frames. Ready for download.";
+                    return;
+                }
+            }
+
+            videoElement.play();
+            processFrame();
+        }
+
+        // Video event listeners
+        videoElement.addEventListener('pause', function() {
+            isProcessing = false;
+            processButton.disabled = false;
+            status.textContent = "Processing paused at frame " + frameCount;
+        });
+
+        videoElement.addEventListener('ended', function() {
+            isProcessing = false;
+            processButton.disabled = false;
+            downloadButton.disabled = false;
+            downloadCsvButton.disabled = false;
+            status.textContent = "Completed! Extracted " + frameCount + " frames. Ready for download.";
+        });
+    </script>
+</body>
+</html>

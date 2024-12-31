@@ -1,5 +1,5 @@
 # video-frame-extractor.html
-Locally Extract Video Frames As PNG Images. I show the prompt I use on Claude.AI to show how I made it...
+Locally Extract Video Frames As PNG Images. A trully portable application for any operating system!
 
 # My claude.ai prompts used to make this:
 
@@ -21,10 +21,10 @@ Upload a video, extract all the frames, save as *.zip file or DataURL (base64) l
 
 # Why 3 Files?
 
-video-frame-extractor-zip-csv.html (online version) uses external *.js file so it won't run offline.
+video-frame-extractor-zip-csv.html (non-portable/online version) uses external *.js file so it won't fully (50% offline) run offline, but you can still manually download each frame as it previews each frame. Also, offline you can still download the list of data URLs (CSV file, just the ZIP packager must be online).
 
-video-frame-extractor-zip-csv-embedded-JS.html (offline/local version) has the JavaScript code embedded to make it portable (runs on linux/android/windows/mac) and will and do it's thing offline or without internet (my addition). 107KB
+video-frame-extractor-zip-csv-embedded-JS.html (offline/local version) has the JavaScript code embedded to make it portable (runs on linux/android/windows/mac) and will and do it's thing offline or without internet. I had to embed the source code because claude couldn't provide an antique ES3 solution, instead we got an external ES5 script to a least run). 107KB
 
-video-frame-extractor-zip-csv-compressed-JS.html (offline) is embedded JS, but it's the script is compressed to half the size (48KB).
+video-frame-extractor-zip-csv-compressed-JS.html (portable offline) is embedded JS, but it's the script is compressed to half the size (48KB). The compression I made is self extracting within itself...
 
 
